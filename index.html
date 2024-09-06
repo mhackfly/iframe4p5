@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="utf-8">
+    <title>iframe4p5js</title>
+    
+    <style>
+
+        * {
+            margin: 0;
+            padding: 20px;
+        }
+
+        body {
+            background-color: #0F1121;
+        }
+
+        iframe {
+            margin: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+        }
+
+    </style>
+
+    <script>
+
+        window.addEventListener('resize', function() {
+            const dimensions = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+            const iframes = document.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                iframe.contentWindow.postMessage(dimensions, '*');
+            });
+        });
+
+    </script>
+
+</head>
+
+    <body>
+
+        <iframe src="sketch.html" name="example.js"></iframe>
+        
+    </body>
+
+</html>

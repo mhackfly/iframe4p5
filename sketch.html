@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Mon Sketch</title>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.min.js'></script>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        canvas {
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+    </style>
+
+    <script>
+
+        /*
+            Variables used to store the original dimensions of the iframe and the canvas.
+            The borders_width variable is used to store the total width of the borders of the iframe.
+        */
+        let largeur_iframe_origine = 0;
+        let hauteur_iframe_origine = 0;
+        let largeur_canvas_origine = 0;
+        let hauteur_canvas_origine = 0;
+        let iframe_borders_width = 0;
+        
+        /*
+         * The iframe element is retrieved with the frameElement property of the window object.
+         * The name property of the iframe element is used to import the corresponding script in the parent page.
+         * The script is imported with the function import_script.
+         * 
+         * The import_script function is defined in the parent page and takes the name of the iframe as argument.
+         * It imports the script associated with the iframe by adding a new script element to the head of the parent page.
+         */
+        var iframe = window.frameElement;
+        import_script(iframe.name);
+        
+        /* 
+         * Event handler for the window's message event.
+         * 
+         * Handles the message event by checking if the message comes from the same origin as the current window.
+         * If the origin is valid, it calls the resize_iframe function with the 'width' property of the event's data as argument.
+         * 
+         * @param {MessageEvent} event The event object of the message event.
+         * @returns {void} No return value.
+         */
+         window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) {
+                return;
+            }
+            const dimensions_event = event.data;
+            resize_iframe(dimensions_event.width);
+        });
+
+        /**
+         * Event handler for the window's onload event.
+         * 
+         * Initializes the iframe by calling the init_iframe function with the iframe's name,
+         * and then forces the iframe to resize by calling the force_resize_iframe function.
+         * 
+         * @param {void} No parameters.
+         * @returns {void} No return value.
+         */
+        window.onload = function() {
+
+            var iframe = window.frameElement;
+            init_iframe(iframe.name);
+            iframe_borders_width = get_iframe_borders_width(iframe.name);
+
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe.name}"]`);
+            var largeur_page = parentIframe.parentElement.clientWidth;
+            resize_iframe(largeur_page);
+
+        }
+
+        /**
+         * Initializes an iframe by setting its display and margin styles, 
+         * and then sets its width and height based on the canvas element.
+         * 
+         * @param {string} iframe_name - The name of the iframe to be initialized.
+         * @returns {void}
+         */
+        function init_iframe(iframe_name) {
+
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            if (parentIframe) {
+                parentIframe.style.display = 'block';
+                parentIframe.style.margin = '0 auto';
+                const canvas = document.querySelector('canvas');
+                const style = getComputedStyle(canvas);
+                largeur_canvas_origine = canvas.width;
+                hauteur_canvas_origine = canvas.height;                
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                largeur_iframe_origine = canvas.width;
+                hauteur_iframe_origine = canvas.height;
+                parentIframe.style.width = largeur_iframe_origine + 'px';
+                parentIframe.style.height = hauteur_iframe_origine + 'px';
+            }
+
+        }
+
+        /**
+         * Retrieves the total width of the borders, box shadow, and padding of an iframe.
+         * 
+         * @param {string} iframe_name - The name of the iframe to retrieve border width for.
+         * @returns {number} The total width of the borders, box shadow, and padding of the iframe.
+         */
+         function get_iframe_borders_width(iframe_name) {
+
+            const iframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            if (iframe) {
+                const style = getComputedStyle(iframe);
+                const border_width = parseFloat(style.borderWidth) || 0;
+                const box_shadow = style.boxShadow ? style.boxShadow.split(' ') : [0, 0, 0, 0];
+                const box_shadow_width = parseFloat(box_shadow[3]) || 0;
+                const padding_width = parseFloat(style.padding) || 0;
+                const left_banding = parseInt(window.parent.getComputedStyle(iframe.parentElement).getPropertyValue('padding-left'));
+                const right_banding = parseInt(window.parent.getComputedStyle(iframe.parentElement).getPropertyValue('padding-right'));
+                return (2 * (border_width + box_shadow_width + padding_width + left_banding + right_banding));
+            }
+            return 0;
+
+        }
+
+        /**
+         * Resizes an iframe based on the provided article page width.
+         * 
+         * Calculates the ratio of the iframe and canvas elements, then adjusts their widths and heights accordingly.
+         * If the calculated width is less than the original iframe width, it sets the iframe and canvas to the calculated width and their respective heights based on the ratios.
+         * Otherwise, it sets the iframe and canvas to their original widths and heights.
+         * 
+         * @param {number} article_page_width - The width of the article page.
+         * @returns {void}
+         */
+        function resize_iframe(article_page_width) {
+
+            var ratio_iframe = largeur_iframe_origine / hauteur_iframe_origine;
+            var ratio_canvas = largeur_canvas_origine / hauteur_canvas_origine;
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            const canvas = document.getElementsByTagName('canvas')[0];
+
+            var largeur_page = article_page_width - iframe_borders_width;
+
+            if (largeur_page < largeur_iframe_origine) {
+                parentIframe.style.width = largeur_page + 'px';
+                parentIframe.style.height = (largeur_page / ratio_iframe) + 'px';
+                canvas.style.width = largeur_page + 'px';
+                canvas.style.height = (largeur_page / ratio_canvas) + 'px';
+            } else {
+                parentIframe.style.width = largeur_iframe_origine + 'px';
+                parentIframe.style.height = hauteur_iframe_origine + 'px';
+                canvas.style.width = largeur_canvas_origine + 'px';
+                canvas.style.height = hauteur_canvas_origine + 'px';
+            }
+            
+        }
+
+        /**
+         * Dynamically imports a script into the current HTML document.
+         * 
+         * If the script's URL has a '.js' extension, it is imported using a script tag.
+         * Otherwise, the script's contents are fetched using an XMLHttpRequest and then processed by the bascal2js function.
+         * 
+         * @param {string} url The URL of the script to import.
+         * @returns {void} No return value.
+         */
+         function import_script(url) {
+
+            var url_parts = url.split('.');
+            var extension = url_parts[url_parts.length - 1];
+            if (extension == 'js') {
+                var script = document.createElement("script")
+                script.type = "text/javascript";
+                script.src = url;
+                document.getElementsByTagName("head")[0].appendChild(script);
+            }
+            else {
+                var jsbasic_code;
+                var request = new XMLHttpRequest();
+                request.open('GET', url, false);
+                request.send(null);
+                jsbasic_code = request.responseText.replace(/\n/g, "\r\n");
+                jsbasic(jsbasic_code);
+            }
+
+        }
+
+        /**
+         * Fonctions pour modifier les proprietes de l'iframe contenant le canvas.
+         * 
+         * @function iframeBorder         - Modifie la bordure de l'iframe.
+         * @function iframeBorderRadius   - Modifie le rayon de la bordure de l'iframe.
+         * @function iframeBackgroundColor - Modifie la couleur de fond de l'iframe.
+         * @function iframePadding        - Modifie l'espacement interieur de l'iframe.
+         * @function iframeBoxShadow      - Modifie l'ombre portee de l'iframe.
+         */
+         function iframeBorder(border) {
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            parentIframe.style.border = border;
+        }  
+
+        function iframeBorderRadius(border_radius) {
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            parentIframe.style.borderRadius = border_radius;
+            const canvas = document.querySelector('canvas');
+            canvas.style.borderRadius = border_radius - parentIframe.style.border;
+        }  
+
+        function iframeBackgroundColor(background_color) {
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            parentIframe.style.backgroundColor = background_color;
+        }  
+
+        function iframePadding(padding) {
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            parentIframe.style.padding = padding;
+        }  
+
+        function iframeBoxShadow(box_shadow) {
+            const iframe_name = window.frameElement.name;
+            const parentIframe = window.parent.document.querySelector(`iframe[name="${iframe_name}"]`);
+            parentIframe.style.boxShadow = box_shadow;
+        }  
+
+    </script>
+
+</head>
+
+<body></body>
+
+</html>
